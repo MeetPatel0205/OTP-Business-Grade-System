@@ -43,13 +43,13 @@ api.interceptors.response.use(
 export const authAPI = {
   register: (data: { name: string; email: string; password: string; password_confirmation: string }) =>
     api.post('/register', data),
-  
+
   login: (data: { email: string; password: string }) =>
     api.post('/login', data),
-  
+
   logout: () =>
     api.post('/logout'),
-  
+
   getUser: () =>
     api.get('/user'),
 };
@@ -57,12 +57,26 @@ export const authAPI = {
 export const otpAPI = {
   sendOtp: (email: string) =>
     api.post('/send-otp', { email }),
-  
+
   verifyOtp: (data: { email: string; otp: string }) =>
     api.post('/verify-otp', data),
-  
+
   resendOtp: (email: string) =>
     api.post('/resend-otp', { email }),
+};
+
+export const passwordAPI = {
+  forgot: (email: string) =>
+    api.post('/password/forgot', { email }),
+
+  verifyOtp: (data: { email: string; otp: string }) =>
+    api.post('/password/verify-otp', data),
+
+  reset: (data: { email: string; otp: string; password: string; password_confirmation: string }) =>
+    api.post('/password/reset', data),
+
+  resendOtp: (email: string) =>
+    api.post('/password/resend-otp', { email }),
 };
 
 export default api;
