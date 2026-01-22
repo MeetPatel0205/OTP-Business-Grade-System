@@ -28,22 +28,23 @@ export default function EditUserPage() {
                 if (!params?.id) return;
                 const userId = Number(params.id);
 
-                // Use the safe endpoint for roles
-                // Ideally we should always use getAssignable for this context
-                const [userRes, rolesRes] = await Promise.all([
-                    userAPI.get(userId),
-                    roleAPI.getAssignable()
-                ]);
+                // Strict Role Fetching
+                // If user is Admin (and not SuperAdmin), they CANNOT change roles.
+                // So we do NOT fetch assignable roles for them anymore.
+                const currentUserIsSuperAdmin = user?.roles?.some((r: any) => r.name === 'SuperAdmin');
+
+                let rolesData = [];
+                if (currentUserIsSuperAdmin) {
+                    const rolesRes = await roleAPI.getAssignable(); // Or getAll() if SuperAdmin gets all
+                    rolesData = rolesRes.data.data || rolesRes.data;
+                }
 
                 if (userRes.data.success) {
                     setUserData(userRes.data.data);
-                    // Assuming user has one role for now or picking the first one
                     const userRole = userRes.data.data.roles?.[0]?.name;
                     if (userRole) setSelectedRole(userRole);
                 }
 
-                // Handle different response structures for roles
-                const rolesData = rolesRes.data.data || rolesRes.data;
                 setRoles(Array.isArray(rolesData) ? rolesData : []);
 
             } catch (error: any) {
@@ -61,7 +62,7 @@ export default function EditUserPage() {
         };
 
         fetchData();
-    }, [params?.id]);
+    }, [params?.id, user]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();

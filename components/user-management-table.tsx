@@ -16,6 +16,7 @@ import {
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth-context"
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -51,10 +52,13 @@ interface DataTableProps {
 }
 
 export function UserManagementTable({ data, onEditRole, onDeleteUser, onViewUser }: DataTableProps & { onDeleteUser: (user: User) => void, onViewUser: (user: User) => void }) {
+    const { user: currentUser } = useAuth()
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
+
+    const isSuperAdmin = currentUser?.roles?.some((r: any) => r.name === 'SuperAdmin')
 
     const columns: ColumnDef<User>[] = [
         {
@@ -108,15 +112,17 @@ export function UserManagementTable({ data, onEditRole, onDeleteUser, onViewUser
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => onViewUser(user)}>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewUser(user); }}>
                                 View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.email)}>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(user.email); }}>
                                 Copy Email
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => onEditRole(user)}>Change Role</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => onDeleteUser(user)}>Delete User</DropdownMenuItem>
+                            {isSuperAdmin && (
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditRole(user); }}>Change Role</DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={(e) => { e.stopPropagation(); onDeleteUser(user); }}>Delete User</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )

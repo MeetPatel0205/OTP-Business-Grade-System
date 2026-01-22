@@ -52,7 +52,7 @@ export function EditRoleDialog({ open, onOpenChange, user, onSuccess }: EditRole
 
     const fetchRoles = async () => {
         try {
-            const res = await roleAPI.getAll()
+            const res = await roleAPI.getAssignable()
             if (res.data.success) {
                 setRoles(res.data.data)
             }
