@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthLayout } from '@/components/auth-layout';
 import { Button } from '@/components/ui/button';
@@ -18,9 +18,14 @@ export default function RegisterPage() {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        password: '',
-        password_confirmation: '',
     });
+
+    useEffect(() => {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            router.replace('/dashboard');
+        }
+    }, [router]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -36,15 +41,18 @@ export default function RegisterPage() {
         setError('');
 
         try {
-            const response = await authAPI.register(formData);
+            // Using logic from backend: ensure we use correct endpoint. 
+            // Previous authAPI.register expected password. 
+            // We use sendOtp with name to support registration intent.
+            const response = await authAPI.sendOtp(formData.email, formData.name);
 
             if (response.data.success) {
                 toast.success(response.data.message);
-                // Redirect to OTP verification page
                 router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
             }
         } catch (err: any) {
-            const errorMessage = err.response?.data?.message || 'Registration failed. Please try again.';
+            const errorData = err.response?.data;
+            const errorMessage = errorData?.message || 'Registration failed. Please try again.';
             setError(errorMessage);
             toast.error(errorMessage);
         } finally {
@@ -55,7 +63,7 @@ export default function RegisterPage() {
     return (
         <AuthLayout
             title="Create Account"
-            description="Register to get started with OTP verification"
+            description="Sign up for a new account"
         >
             <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
@@ -92,38 +100,8 @@ export default function RegisterPage() {
                     />
                 </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        minLength={8}
-                        disabled={loading}
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="password_confirmation">Confirm Password</Label>
-                    <Input
-                        id="password_confirmation"
-                        name="password_confirmation"
-                        type="password"
-                        placeholder="••••••••"
-                        value={formData.password_confirmation}
-                        onChange={handleChange}
-                        required
-                        minLength={8}
-                        disabled={loading}
-                    />
-                </div>
-
                 <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Creating Account...' : 'Register'}
+                    {loading ? 'Creating Account...' : 'Continue'}
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">

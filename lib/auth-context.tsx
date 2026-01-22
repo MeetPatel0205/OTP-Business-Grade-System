@@ -8,6 +8,8 @@ interface User {
     name: string;
     email: string;
     email_verified_at: string | null;
+    roles?: { name: string }[];
+    permissions?: { name: string }[];
 }
 
 interface AuthContextType {
@@ -26,21 +28,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Load user and token from localStorage on mount
-        const storedToken = localStorage.getItem('auth_token');
-        const storedUser = localStorage.getItem('user');
+    const checkAuth = async (storedToken: string) => {
+        try {
+            // Check cache validity (5 minutes)
+            const lastCheck = localStorage.getItem('auth_last_check');
+            const now = Date.now();
 
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            setUserState(JSON.parse(storedUser));
+            if (lastCheck && (now - parseInt(lastCheck)) < 5 * 60 * 1000) {
+                // Cache is valid, rely on stored user
+                return;
+            }
+
+            // Cache expired or missing, re-validate
+            const response = await authAPI.getUser();
+            const freshUser = response.data.user;
+
+            // Update storage and state
+            localStorage.setItem('user', JSON.stringify(freshUser));
+            localStorage.setItem('auth_last_check', now.toString());
+            setUserState(freshUser);
+        } catch (error) {
+            console.error('Auth validation failed:', error);
+            // If API fails (401), logout
+            logout();
         }
-        setLoading(false);
+    };
+
+    useEffect(() => {
+        const initAuth = async () => {
+            const storedToken = localStorage.getItem('auth_token');
+            const storedUser = localStorage.getItem('user');
+
+            if (storedToken && storedUser) {
+                setToken(storedToken);
+                setUserState(JSON.parse(storedUser));
+
+                // Validate in background, don't block UI
+                checkAuth(storedToken);
+            }
+
+            setLoading(false);
+        };
+
+        initAuth();
     }, []);
 
     const login = (newToken: string, newUser: User) => {
         localStorage.setItem('auth_token', newToken);
         localStorage.setItem('user', JSON.stringify(newUser));
+        localStorage.setItem('auth_last_check', Date.now().toString());
+
         setToken(newToken);
         setUserState(newUser);
     };
@@ -53,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } finally {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('user');
+            localStorage.removeItem('auth_last_check');
             setToken(null);
             setUserState(null);
         }

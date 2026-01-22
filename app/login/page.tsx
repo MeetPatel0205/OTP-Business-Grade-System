@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthLayout } from '@/components/auth-layout';
 import { Button } from '@/components/ui/button';
@@ -8,27 +8,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { authAPI } from '@/lib/api';
-import { useAuth } from '@/lib/auth-context';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
 export default function LoginPage() {
     const router = useRouter();
-    const { login } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [formData, setFormData] = useState({
-        email: '',
-        password: '',
-    });
+    const [email, setEmail] = useState('');
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
-        setError('');
-    };
+    useEffect(() => {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            router.replace('/dashboard');
+        }
+    }, [router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,26 +30,18 @@ export default function LoginPage() {
         setError('');
 
         try {
-            const response = await authAPI.login(formData);
-
+            const response = await authAPI.sendOtp(email);
             if (response.data.success) {
-                // Store token and user data
-                login(response.data.token, response.data.user);
-                toast.success('Login successful!');
-                router.push('/dashboard');
+                toast.success(response.data.message);
+                router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
             }
         } catch (err: any) {
             const errorData = err.response?.data;
+            const errorMessage = errorData?.message || 'Failed to send OTP. Please try again.';
 
-            // Check if email verification is required
-            if (errorData?.action === 'VERIFY_OTP') {
-                toast.error(errorData.message);
-                router.push(`/verify-otp?email=${encodeURIComponent(errorData.email || formData.email)}`);
-            } else {
-                const errorMessage = errorData?.message || 'Login failed. Please try again.';
-                setError(errorMessage);
-                toast.error(errorMessage);
-            }
+            // Handle rate limit specifically if needed, but message usually covers it
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -63,8 +49,8 @@ export default function LoginPage() {
 
     return (
         <AuthLayout
-            title="Welcome Back"
-            description="Login to your account"
+            title="Welcome"
+            description="Enter your email to sign in or register"
         >
             <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
@@ -80,43 +66,16 @@ export default function LoginPage() {
                         name="email"
                         type="email"
                         placeholder="john@example.com"
-                        value={formData.email}
-                        onChange={handleChange}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                         disabled={loading}
                     />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        disabled={loading}
-                    />
-                </div>
-
-                <div className="flex items-center justify-end">
-                    <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
-                        Forgot Password?
-                    </Link>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Logging in...' : 'Login'}
+                    {loading ? 'Sending OTP...' : 'Send OTP'}
                 </Button>
-
-                <p className="text-center text-sm text-muted-foreground">
-                    Don't have an account?{' '}
-                    <Link href="/register" className="text-primary hover:underline font-medium">
-                        Register
-                    </Link>
-                </p>
             </form>
         </AuthLayout>
     );

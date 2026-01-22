@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { OtpInput } from '@/components/ui/otp-input';
 import { ResendTimer } from '@/components/ui/resend-timer';
-import { otpAPI } from '@/lib/api';
+import { authAPI } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { toast } from 'sonner';
 
 function VerifyOtpContent() {
     const router = useRouter();
+    const { login } = useAuth();
     const searchParams = useSearchParams();
     const email = searchParams.get('email') || '';
 
@@ -30,11 +32,19 @@ function VerifyOtpContent() {
         setError('');
 
         try {
-            const response = await otpAPI.verifyOtp({ email, otp });
+            const response = await authAPI.verifyOtp(email, otp);
 
             if (response.data.success) {
                 toast.success(response.data.message);
-                router.push('/login');
+
+                // Store token and user data via Context (updates state immediately)
+                if (response.data.token) {
+                    login(response.data.token, response.data.user);
+                    // Redirect to dashboard (replace history to prevent back loop)
+                    router.replace('/dashboard');
+                } else {
+                    router.push('/login');
+                }
             }
         } catch (err: any) {
             const errorData = err.response?.data;
@@ -56,7 +66,7 @@ function VerifyOtpContent() {
         setOtp('');
 
         try {
-            const response = await otpAPI.resendOtp(email);
+            const response = await authAPI.resendOtp(email);
 
             if (response.data.success) {
                 toast.success(response.data.message);

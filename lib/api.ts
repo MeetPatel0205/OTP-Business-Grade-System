@@ -41,42 +41,50 @@ api.interceptors.response.use(
 
 // API methods
 export const authAPI = {
-  register: (data: { name: string; email: string; password: string; password_confirmation: string }) =>
-    api.post('/register', data),
+  // Register/Login now just initiates OTP
+  sendOtp: (email: string, name?: string) =>
+    api.post('/auth/send-otp', { email, name }),
 
-  login: (data: { email: string; password: string }) =>
-    api.post('/login', data),
+  verifyOtp: (email: string, otp: string) =>
+    api.post('/auth/verify-otp', { email, otp }),
+
+  resendOtp: (email: string) =>
+    api.post('/auth/resend-otp', { email }),
 
   logout: () =>
-    api.post('/logout'),
+    api.post('/auth/logout'),
 
   getUser: () =>
-    api.get('/user'),
+    api.get('/auth/user'),
 };
 
-export const otpAPI = {
-  sendOtp: (email: string) =>
-    api.post('/send-otp', { email }),
-
-  verifyOtp: (data: { email: string; otp: string }) =>
-    api.post('/verify-otp', data),
-
-  resendOtp: (email: string) =>
-    api.post('/resend-otp', { email }),
+export const userAPI = {
+  getAll: () => api.get('/users'),
+  get: (id: number) => api.get(`/users/${id}`),
+  update: (id: number, data: any) => api.put(`/users/${id}`, data),
+  delete: (id: number) => api.delete(`/users/${id}`),
+  updateRole: (userId: number, role: string) => api.put(`/users/${userId}/role`, { role }),
+  getAuditLogs: (id: number) => api.get(`/users/${id}/audit`),
 };
 
-export const passwordAPI = {
-  forgot: (email: string) =>
-    api.post('/password/forgot', { email }),
-
-  verifyOtp: (data: { email: string; otp: string }) =>
-    api.post('/password/verify-otp', data),
-
-  reset: (data: { email: string; otp: string; password: string; password_confirmation: string }) =>
-    api.post('/password/reset', data),
-
-  resendOtp: (email: string) =>
-    api.post('/password/resend-otp', { email }),
+export const roleAPI = {
+  getAll: () => api.get('/roles'),
+  getAssignable: () => api.get('/roles/assignable'),
+  getPermissions: () => api.get('/roles/permissions'),
 };
+
+export const businessAPI = {
+  getAll: () => api.get('/business'),
+  get: (id: number) => api.get(`/business/${id}`),
+  create: (data: any) => api.post('/business', data),
+  update: (id: number, data: any) => api.put(`/business/${id}`, data),
+  delete: (id: number) => api.delete(`/business/${id}`),
+  getAudit: (id: number) => api.get(`/business/${id}/audit`),
+};
+
+// Deprecate standalone otpAPI and passwordAPI in favor of authAPI for this new flow
+// or keep them if other parts use them, but pointing to new endpoints?
+// Plan says "Update api.ts".
+// Better to export authAPI as the main interface.
 
 export default api;
