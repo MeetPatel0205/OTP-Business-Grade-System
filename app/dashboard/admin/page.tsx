@@ -14,6 +14,7 @@ import { RoleGuard } from '@/components/role-guard';
 import { businessAPI, userAPI } from '@/lib/api';
 
 export default function AdminDashboard() {
+    console.log("Admin Dashboard Rendered");
     const { user, logout } = useAuth();
     const router = useRouter();
     const [businesses, setBusinesses] = React.useState<any[]>([]);
