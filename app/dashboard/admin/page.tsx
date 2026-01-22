@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -105,20 +106,16 @@ export default function AdminDashboard() {
                                                 </span>
                                                 <span>${business.revenue?.toLocaleString() || '0'}</span>
                                                 <div className="flex gap-2">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => router.push(`/dashboard/admin/business/${business.id}/edit`)}
-                                                    >
-                                                        Edit
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        onClick={() => router.push(`/dashboard/admin/business/${business.id}/audit`)}
-                                                    >
-                                                        Audit
-                                                    </Button>
+                                                    <Link href={`/dashboard/admin/business/${business.id}/edit`}>
+                                                        <Button size="sm" variant="outline">
+                                                            Edit
+                                                        </Button>
+                                                    </Link>
+                                                    <Link href={`/dashboard/admin/business/${business.id}/audit`}>
+                                                        <Button size="sm" variant="ghost">
+                                                            Audit
+                                                        </Button>
+                                                    </Link>
                                                 </div>
                                             </div>
                                         ))}
